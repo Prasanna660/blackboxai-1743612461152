@@ -21,19 +21,12 @@ class Command(BaseCommand):
                     time.sleep(10)
                     continue
 
-                # Initialize exchanges
-                exchanges = {}
-                for ex in ExchangeConfig.objects.all():
-                    try:
-                        exchange_class = getattr(ccxt, ex.name.lower())
-                        exchanges[ex.name] = exchange_class({
-                            'apiKey': ex.api_key,
-                            'secret': ex.secret,
-                            'enableRateLimit': True
-                        })
-                    except Exception as e:
-                        self.stdout.write(f"Error initializing {ex.name}: {str(e)}")
-                        continue
+                # Initialize exchanges with public access
+                exchanges = {
+                    'kucoin': ccxt.kucoin(),
+                    'huobi': ccxt.huobi(),
+                    'okx': ccxt.okx()
+                }
 
                 # Fetch prices
                 prices = {}

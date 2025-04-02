@@ -26,6 +26,9 @@ def update_config(request):
     config.save()
     return redirect('dashboard')
 
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
 @require_POST
 def toggle_bot(request):
     config = Configuration.objects.first() or Configuration.objects.create()

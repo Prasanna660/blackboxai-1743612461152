@@ -21,14 +21,33 @@ class Command(BaseCommand):
                     time.sleep(10)
                     continue
 
-                # Initialize exchanges with public access
-                exchanges = {
-                    'kucoin': ccxt.kucoin(),
-                    'huobi': ccxt.huobi(),
-                    'okx': ccxt.okx()
-                }
+                # Initialize exchanges with robust error handling
+                exchange_configs = [
+                    ('kucoin', ccxt.kucoin),
+                    ('okx', ccxt.okx),
+                    ('gateio', ccxt.gateio)
+                ]
+                
+                exchanges = {}
+                for name, exchange_class in exchange_configs:
+                    try:
+                        exchange = exchange_class({
+                            'enableRateLimit': True,
+                            'timeout': 10000
+                        })
+                        exchange.load_markets()  # Test connection
+                        exchanges[name] = exchange
+                        self.stdout.write(f"Successfully connected to {name}")
+                    except Exception as e:
+                        self.stdout.write(f"Error initializing {name}: {str(e)}")
+                        continue
 
-                # Fetch prices
+                if len(exchanges) < 2:
+                    self.stdout.write("Need at least 2 exchanges to find arbitrage")
+                    time.sleep(10)
+                    continue
+
+                # Fetch prices with improved error handling
                 prices = {}
                 for name, exchange in exchanges.items():
                     try:

@@ -1,9 +1,12 @@
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import ExchangeConfigViewSet, ArbitrageOpportunityViewSet, ConfigurationViewSet
+
+router = DefaultRouter()
+router.register(r'exchanges', ExchangeConfigViewSet)
+router.register(r'opportunities', ArbitrageOpportunityViewSet)
+router.register(r'config', ConfigurationViewSet)
 
 urlpatterns = [
-    path('', views.dashboard, name='dashboard'),
-    path('api/opportunities/', views.get_opportunities, name='api-opportunities'),
-    path('update-config/', views.update_config, name='update-config'),
-    path('toggle-bot/', views.toggle_bot, name='toggle-bot'),
+    path('', include(router.urls)),
 ]

@@ -1,37 +1,25 @@
-from django.shortcuts import render, redirect
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from .models import ArbitrageOpportunity, Configuration
+from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from .models import ExchangeConfig, ArbitrageOpportunity, Configuration
+from .serializers import ExchangeConfigSerializer, ArbitrageOpportunitySerializer, ConfigurationSerializer
 
-def dashboard(request):
-    config = Configuration.objects.first() or Configuration.objects.create()
-    opportunities = ArbitrageOpportunity.objects.all()[:20]
-    return render(request, 'arbitrage/dashboard.html', {
-        'config': config,
-        'opportunities': opportunities
-    })
+class ExchangeConfigViewSet(viewsets.ModelViewSet):
+    queryset = ExchangeConfig.objects.all()
+    serializer_class = ExchangeConfigSerializer
 
-def get_opportunities(request):
-    opportunities = list(ArbitrageOpportunity.objects.order_by('-timestamp')[:10].values(
-        'timestamp', 'buy_exchange', 'sell_exchange', 'buy_price', 'sell_price', 'profit'
-    ))
-    return JsonResponse(opportunities, safe=False)
+class ArbitrageOpportunityViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = ArbitrageOpportunity.objects.all().order_by('-timestamp')
+    serializer_class = ArbitrageOpportunitySerializer
+    pagination_class = None
 
-@require_POST
-def update_config(request):
-    config = Configuration.objects.first() or Configuration.objects.create()
-    config.profit_threshold = float(request.POST.get('profit_threshold', 10))
-    config.trade_amount = float(request.POST.get('trade_amount', 0.01))
-    config.symbol = request.POST.get('symbol', 'BTC/USDT')
-    config.save()
-    return redirect('dashboard')
+class ConfigurationViewSet(viewsets.ModelViewSet):
+    queryset = Configuration.objects.all()
+    serializer_class = ConfigurationSerializer
 
-from django.views.decorators.csrf import csrf_exempt
-
-@csrf_exempt
-@require_POST
-def toggle_bot(request):
-    config = Configuration.objects.first() or Configuration.objects.create()
-    config.active = not config.active
-    config.save()
-    return JsonResponse({'active': config.active})
+    @action(detail=False, methods=['post'])
+    def toggle_bot(self, request):
+        config = Configuration.objects.first()
+        config.active = not config.active
+        config.save()
+        return Response({'status': 'success', 'active': config.active})
